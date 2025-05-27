@@ -16,12 +16,13 @@
   <button id="start-btn">Start Camera</button>
   <div id="status"></div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/minified/html5-qrcode.min.js" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script>
     const status = document.getElementById('status');
     const startBtn = document.getElementById('start-btn');
     const videoPreview = document.getElementById('preview');
-    const html5QrCode = new Html5Qrcode("preview");
+
+    let html5QrCode;
 
     async function startScanner() {
       try {
@@ -31,35 +32,38 @@
           return;
         }
 
+        const cameraId = devices[0].id;
         videoPreview.style.display = 'block';
+
+        html5QrCode = new Html5Qrcode("preview");
+
         html5QrCode.start(
-          devices[0].id,
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
           decodedText => {
             html5QrCode.stop().then(() => {
               provideFeedback();
               sendToGoogleForm(decodedText);
             });
           },
-          error => {
-            console.warn(error);
+          errorMessage => {
+            // Suppress continuous errors
           }
-        );
+        ).catch(err => {
+          status.textContent = "❌ Failed to start scanner: " + err;
+        });
+
       } catch (err) {
-        status.textContent = "❌ Camera access error: " + err;
+        status.textContent = "❌ Error accessing camera: " + err;
       }
     }
 
     function provideFeedback() {
       try {
-        if (navigator.vibrate) {
-          navigator.vibrate(200);
-        }
+        navigator.vibrate?.(200);
         const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
-        beep.play().catch(err => console.warn("Beep failed:", err));
-      } catch (err) {
-        console.warn("Feedback error:", err);
-      }
+        beep.play().catch(() => {});
+      } catch {}
     }
 
     function sendToGoogleForm(appointmentId) {
@@ -70,7 +74,7 @@
           status.textContent = "✅ Check-in confirmed for ID: " + appointmentId;
         })
         .catch(() => {
-          status.textContent = "❌ Failed to submit. Try again.";
+          status.textContent = "❌ Submission failed.";
         });
     }
 
