@@ -5,18 +5,22 @@
   <title>UBQT Check-in</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    video { width: 100%; max-width: 400px; margin: 1rem auto; }
+    video { width: 100%; max-width: 400px; margin: 1rem auto; border: 1px solid #ccc; }
     #status { margin-top: 1rem; font-size: 1.2rem; color: green; }
+    #start-btn { padding: 10px 20px; font-size: 1rem; margin-top: 20px; }
   </style>
 </head>
 <body>
   <h1>Scan QR to Check In</h1>
   <video id="preview"></video>
+  <button id="start-btn">Start Camera</button>
   <div id="status"></div>
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script>
     const status = document.getElementById('status');
+    const startBtn = document.getElementById('start-btn');
+    const html5QrCode = new Html5Qrcode("preview");
 
     function sendToGoogleForm(appointmentId) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScE2MfRlfQtTuaKCg0RYFaJAzMFnevYu8BiVsFnncKiwbL92g/formResponse";
@@ -30,23 +34,27 @@
         });
     }
 
-    const html5QrCode = new Html5Qrcode("preview");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        html5QrCode.start(
-          { facingMode: "environment" },
-          config,
-          decodedText => {
-            html5QrCode.stop();
-            sendToGoogleForm(decodedText);
-          },
-          error => {} // silent errors
-        );
-      }
-    }).catch(err => {
-      status.textContent = "Camera error: " + err;
+    startBtn.addEventListener('click', () => {
+      startBtn.style.display = 'none';
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+          html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            decodedText => {
+              html5QrCode.stop();
+              sendToGoogleForm(decodedText);
+            },
+            error => {
+              console.warn(error);
+            }
+          );
+        } else {
+          status.textContent = "❌ No camera found on device.";
+        }
+      }).catch(err => {
+        status.textContent = "Camera error: " + err;
+      });
     });
   </script>
 </body>
