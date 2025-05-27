@@ -1,0 +1,62 @@
+<!-- This page should be opened on the Sunmi device -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Check-in Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    input[type=text] {
+      font-size: 24px;
+      width: 90%;
+      padding: 10px;
+      margin: 20px auto;
+      display: block;
+    }
+    .message {
+      font-size: 20px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scan QR pentru Prezență</h1>
+  <input type="text" id="qrInput" placeholder="Scanează aici..." autofocus>
+  <div class="message" id="message"></div>
+
+  <script>
+    const qrInput = document.getElementById('qrInput');
+    const message = document.getElementById('message');
+
+    qrInput.addEventListener('change', () => {
+      const scannedValue = qrInput.value.trim();
+      if (!scannedValue) return;
+
+      const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLScE2MfRlfQtTuaKCg0RYFaJAzMFnevYu8BiVsFnncKiwbL92g/formResponse';
+      const formData = new FormData();
+      
+      // This is your actual field entry ID from the Google Form
+      formData.append('entry.1836676466', scannedValue); // Appointment ID
+
+      fetch(formUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: formData
+      })
+      .then(() => {
+        message.textContent = `Prezență înregistrată pentru ID: ${scannedValue}`;
+        qrInput.value = '';
+        qrInput.focus();
+      })
+      .catch(err => {
+        message.textContent = 'Eroare la trimitere. Încearcă din nou.';
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
