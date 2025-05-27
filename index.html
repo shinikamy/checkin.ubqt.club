@@ -36,9 +36,10 @@
           devices[0].id,
           { fps: 10, qrbox: { width: 250, height: 250 } },
           decodedText => {
-            html5QrCode.stop();
-            provideFeedback();
-            sendToGoogleForm(decodedText);
+            html5QrCode.stop().then(() => {
+              provideFeedback();
+              sendToGoogleForm(decodedText);
+            });
           },
           error => {
             console.warn(error);
@@ -50,11 +51,15 @@
     }
 
     function provideFeedback() {
-      if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(200);
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
+        }
+        const beep = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+        beep.play().catch(err => console.warn("Beep failed:", err));
+      } catch (err) {
+        console.warn("Feedback error:", err);
       }
-      const beep = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=');
-      beep.play();
     }
 
     function sendToGoogleForm(appointmentId) {
