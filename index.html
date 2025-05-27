@@ -1,61 +1,52 @@
-<!-- This page should be opened on the Sunmi device -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Check-in Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>UBQT Check-in</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    input[type=text] {
-      font-size: 24px;
-      width: 90%;
-      padding: 10px;
-      margin: 20px auto;
-      display: block;
-    }
-    .message {
-      font-size: 20px;
-      color: green;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    video { width: 100%; max-width: 400px; margin: 1rem auto; }
+    #status { margin-top: 1rem; font-size: 1.2rem; color: green; }
   </style>
 </head>
 <body>
-  <h1>Scan QR pentru Prezență</h1>
-  <input type="text" id="qrInput" placeholder="Scanează aici..." autofocus>
-  <div class="message" id="message"></div>
+  <h1>Scan QR to Check In</h1>
+  <video id="preview"></video>
+  <div id="status"></div>
 
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script>
-    const qrInput = document.getElementById('qrInput');
-    const message = document.getElementById('message');
+    const status = document.getElementById('status');
 
-    qrInput.addEventListener('change', () => {
-      const scannedValue = qrInput.value.trim();
-      if (!scannedValue) return;
+    function sendToGoogleForm(appointmentId) {
+      const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLScE2MfRlfQtTuaKCg0RYFaJAzMFnevYu8BiVsFnncKiwbL92g/formResponse";
+      const fullUrl = formUrl + "?entry.1836676466=" + encodeURIComponent(appointmentId);
+      fetch(fullUrl, { mode: 'no-cors' })
+        .then(() => {
+          status.textContent = "✅ Check-in confirmed for ID: " + appointmentId;
+        })
+        .catch(() => {
+          status.textContent = "❌ Failed to submit. Try again.";
+        });
+    }
 
-      const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLScE2MfRlfQtTuaKCg0RYFaJAzMFnevYu8BiVsFnncKiwbL92g/formResponse';
-      const formData = new FormData();
-      
-      // This is your actual field entry ID from the Google Form
-      formData.append('entry.1836676466', scannedValue); // Appointment ID
+    const html5QrCode = new Html5Qrcode("preview");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-      fetch(formUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: formData
-      })
-      .then(() => {
-        message.textContent = `Prezență înregistrată pentru ID: ${scannedValue}`;
-        qrInput.value = '';
-        qrInput.focus();
-      })
-      .catch(err => {
-        message.textContent = 'Eroare la trimitere. Încearcă din nou.';
-        console.error(err);
-      });
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          decodedText => {
+            html5QrCode.stop();
+            sendToGoogleForm(decodedText);
+          },
+          error => {} // silent errors
+        );
+      }
+    }).catch(err => {
+      status.textContent = "Camera error: " + err;
     });
   </script>
 </body>
